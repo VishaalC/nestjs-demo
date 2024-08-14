@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  HttpCode,
-  Body,
-  Ip,
-  Post,
-  Param,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, Body, Post, Param } from '@nestjs/common';
 import { CreateCatDto } from './dto/create-cat.dto';
 import { CatsService } from './cats.service';
 import { Cat } from './interfaces/cats.interface';
@@ -22,9 +14,9 @@ export class CatsController {
   }
 
   @Post()
-  async sendCat(@Body() createCatDTO: CreateCatDto): Promise<String> {
+  async sendCat(@Body() createCatDTO: CreateCatDto): Promise<CreateCatDto> {
     this.catsService.create(createCatDTO);
-    return 'Cat added';
+    return createCatDTO;
   }
 
   @Get(':id')
