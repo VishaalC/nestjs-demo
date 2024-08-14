@@ -2,34 +2,29 @@ import {
   Controller,
   Get,
   HttpCode,
-  Res,
-  Req,
   Body,
   Ip,
   Post,
   Param,
 } from '@nestjs/common';
-import { CreateCatDto } from './create-cat.dto';
+import { CreateCatDto } from './dto/create-cat.dto';
+import { CatsService } from './cats.service';
+import { Cat } from './interfaces/cats.interface';
 
 @Controller('cats')
 export class CatsController {
-  //   @Get('calico')
-  //   findAll(@Res() response: any) {
-  //     response.status(200).send('Calico');
-  //   }
+  constructor(private catsService: CatsService) {}
 
-  @Get('calico-normal')
+  @Get()
   @HttpCode(200)
-  findAll(@Body() reqBody: any, @Ip() ip: any): Object {
-    console.log(reqBody);
-    console.log(ip);
-    let req = { calico: 'cat' };
-    return req;
+  async findAll(): Promise<Cat[]> {
+    return this.catsService.findAll();
   }
 
-  @Post('calico-normal')
-  async sendCat(@Body() createCatDTO: CreateCatDto) {
-    return createCatDTO;
+  @Post()
+  async sendCat(@Body() createCatDTO: CreateCatDto): Promise<String> {
+    this.catsService.create(createCatDTO);
+    return 'Cat added';
   }
 
   @Get(':id')
