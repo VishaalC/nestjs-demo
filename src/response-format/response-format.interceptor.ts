@@ -39,12 +39,11 @@ export class ResponseFormatInterceptor implements NestInterceptor {
     const response = ctx.getResponse();
     const request = ctx.getRequest();
     const statusCode = response.statusCode;
-
     return {
       status: true,
       path: request.url,
       statusCode,
-      data: res[0] || res,
+      data: res,
     };
   }
 }

@@ -1,5 +1,5 @@
 export interface User {
-  UserId: BigInteger;
+  UserId: String;
   UserName: String;
   PassWord: String;
 }
