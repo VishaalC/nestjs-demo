@@ -21,9 +21,9 @@ export class ResponseFormatInterceptor implements NestInterceptor {
 
   errorHandler(exception: HttpException, context: ExecutionContext) {
     const ctx = context.switchToHttp();
-    const response = ctx.getRequest();
+    const response = ctx.getResponse();
     const request = ctx.getRequest();
-    const status = exception.getStatus();
+    const status = response.statusCode;
 
     response.status(status).json({
       status: false,
@@ -39,17 +39,12 @@ export class ResponseFormatInterceptor implements NestInterceptor {
     const response = ctx.getResponse();
     const request = ctx.getRequest();
     const statusCode = response.statusCode;
-    const message = response.message;
-
-    console.log(response.message);
-    console.log(res.message);
 
     return {
       status: true,
       path: request.url,
-      message,
       statusCode,
-      data: res,
+      data: res[0] || res,
     };
   }
 }
