@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { userDto, userRequestDTO } from './dto/user.dto';
 import { userResponseDTO } from './dto/userResponse.dto';
 import { userDataSource } from '../database/database.providers';
@@ -8,38 +8,58 @@ import { ResultSetHeader } from 'mysql2';
 export class UsersService {
   constructor() {}
 
-  async getAllUser(): Promise<userRequestDTO[]> {
-    return await userDataSource.manager.query('SELECT * FROM users');
+  async getAllUser(): Promise<any> {
+    try {
+      return await userDataSource.manager.query('SELECT * FROM users');
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
   }
 
-  async addUser(user: userRequestDTO): Promise<userResponseDTO> {
-    const result = await userDataSource.manager.query(
-      'INSERT INTO users Values(?, ?, ?)',
-      [user?.UserId, user?.PassWord, user?.UserName],
-    );
-    return { id: result?.insertId, ...user };
+  async addUser(user: any): Promise<any> {
+    try {
+      const result = await userDataSource.manager.query(
+        'INSERT INTO users Values(?, ?, ?)',
+        [user?.UserId, user?.PassWord, user?.UserName],
+      );
+      return { id: result?.insertId, ...user };
+    } catch (Error) {
+      throw Error;
+    }
   }
 
-  async getUser(userId: String): Promise<userRequestDTO> {
-    const result = await userDataSource.manager.query(
-      'SELECT * FROM users WHERE UserId=?',
-      [userId],
-    );
-    return result;
+  async getUser(userId: string): Promise<userRequestDTO> {
+    try {
+      const result = await userDataSource.manager.query(
+        'SELECT * FROM users WHERE UserId=?',
+        [userId],
+      );
+      return result;
+    } catch (Error) {
+      throw Error;
+    }
   }
 
-  async updateUser(userId: String, user: userDto): Promise<userResponseDTO> {
-    const result = await userDataSource.manager.query(
-      'UPDATE users SET PassWord=?, UserName=? WHERE UserId=?',
-      [user?.PassWord, user?.UserName, userId],
-    );
-    return { id: result?.insertId, UserId: userId, ...user };
+  async updateUser(userId: string, user: userDto): Promise<userResponseDTO> {
+    try {
+      const result = await userDataSource.manager.query(
+        'UPDATE users SET PassWord=?, UserName=? WHERE UserId=?',
+        [user?.PassWord, user?.UserName, userId],
+      );
+      return { id: result?.insertId, UserId: userId, ...user };
+    } catch (Error) {
+      throw Error;
+    }
   }
 
   async deleteUser(userId: String): Promise<ResultSetHeader> {
-    return await userDataSource.manager.query(
-      'DELETE FROM users WHERE UserId=?',
-      [userId],
-    );
+    try {
+      return await userDataSource.manager.query(
+        'DELETE FROM users WHERE UserId=?',
+        [userId],
+      );
+    } catch (Error) {
+      throw Error;
+    }
   }
 }

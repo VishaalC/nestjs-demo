@@ -1,25 +1,21 @@
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { isStringObject } from 'util/types';
 
 export class userDto {
-  @IsString()
   @IsNotEmpty()
-  UserName: String;
+  UserName: string;
 
-  @IsString()
   @IsNotEmpty()
-  PassWord: String;
+  PassWord: string;
 }
 
 export class userRequestDTO {
-  @IsString()
   @IsNotEmpty()
-  UserId: String;
+  UserId: string;
 
-  @IsString()
   @IsNotEmpty()
-  UserName: String;
+  UserName: string;
 
-  @IsString()
   @IsNotEmpty()
-  PassWord: String;
+  PassWord: string;
 }
