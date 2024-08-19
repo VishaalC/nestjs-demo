@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 dotenv.config();
+import { loggerInstance } from 'logger/winston.logger';
 
 export const userDataSource = new DataSource({
   type: 'mysql',
@@ -15,8 +16,14 @@ export const userDataSource = new DataSource({
 userDataSource
   .initialize()
   .then(() => {
-    console.log('Data Source has been initialized!');
+    loggerInstance.log({
+      level: 'info',
+      message: 'Database connected successfully',
+    });
   })
   .catch((err) => {
-    console.error('Error during Data Source initialization', err);
+    loggerInstance.log({
+      level: 'error',
+      message: err,
+    });
   });

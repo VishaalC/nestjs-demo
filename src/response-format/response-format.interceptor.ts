@@ -23,7 +23,10 @@ export class ResponseFormatInterceptor implements NestInterceptor {
     const ctx = context.switchToHttp();
     const response = ctx.getResponse();
     const request = ctx.getRequest();
-    const status = exception.getStatus();
+    let status: Number;
+    typeof exception.getStatus !== 'undefined'
+      ? (status = exception.getStatus())
+      : (status = 500);
     response.status(status).json({
       statusCode: status,
       path: request.url,
