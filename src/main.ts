@@ -4,7 +4,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { ResponseFormatInterceptor } from './response-format/response-format.interceptor';
 import { WinstonModule } from 'nest-winston';
 import { loggerInstance } from 'logger/winston.logger';
-import { AuthGuard } from './auth/auth.guard';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
