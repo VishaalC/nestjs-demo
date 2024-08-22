@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
-dotenv.config();
 import { loggerInstance } from 'logger/winston.logger';
+dotenv.config();
 
 export const userDataSource = new DataSource({
   type: 'mysql',

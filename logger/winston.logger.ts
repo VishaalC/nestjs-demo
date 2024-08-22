@@ -28,6 +28,17 @@ const logger = {
       zippedArchive: false,
       maxFiles: '1d',
     }),
+
+    new transports.Console({
+      format: format.combine(
+        format.cli(),
+        format.splat(),
+        format.timestamp(),
+        format.printf((info) => {
+          return `${info.timestamp} ${info.level}: ${info.message}`;
+        }),
+      ),
+    }),
   ],
 };
 
