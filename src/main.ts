@@ -17,7 +17,7 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
-  // app.useGlobalInterceptors(new ResponseFormatInterceptor());
+  app.useGlobalInterceptors(new ResponseFormatInterceptor());
   const server = await app.listen(3000);
   server.setTimeout(2147483647);
 }

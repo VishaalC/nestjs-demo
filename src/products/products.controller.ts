@@ -21,6 +21,6 @@ export class ProductsController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadData(@UploadedFile() file: Express.Multer.File): Promise<any> {
-    return this.productsService.uploadFile(file);
+    return await this.productsService.uploadFile(file);
   }
 }
