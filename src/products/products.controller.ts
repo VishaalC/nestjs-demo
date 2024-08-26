@@ -56,7 +56,6 @@ export class ProductsController {
 
   @Get('searchBetweenPriceRange')
   async searchBetweenPriceRange(@Query() query, @Body() range) {
-    console.log(range);
     return await this.productsService.searchProductBetweenRange(
       query.fit_type,
       query.material,

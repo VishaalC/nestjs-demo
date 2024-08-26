@@ -271,10 +271,12 @@ export class ProductsService {
   async popularProductsByBrand() {
     try {
       const popularProductsByBrand = await userDataSource.manager.query(
-        `SELECT brand.brand_name, COUNT(joined_table.brand_name) AS product_count FROM brand
-         INNER JOIN products joined_table ON brand.brand_name = joined_table.brand_name
-        GROUP BY (brand.brand_name)
-        ORDER BY (product_count) DESC;`,
+        `SELECT name, product_count,brand_name FROM (
+          SELECT joined_table.name, COUNT(joined_table.name) AS product_count, joined_table.brand_name FROM brand
+          INNER JOIN products joined_table ON brand.brand_name = joined_table.brand_name
+          GROUP BY joined_table.brand_name, joined_table.name
+          ORDER BY (product_count) DESC) AS h
+          GROUP BY brand_name;`,
       );
       if (popularProductsByBrand.length == 0) {
         return new NotFoundException();
@@ -325,10 +327,12 @@ export class ProductsService {
   async popularSizesPerBrand() {
     try {
       const popularSizesPerBrand = await userDataSource.manager.query(
-        `SELECT size, brand_name, COUNT(size) AS size_count FROM products
-         INNER JOIN size joined_table ON products.product_id = joined_table.product_id
-         GROUP BY size, brand_name;
-        `,
+        `SELECT * FROM (
+          SELECT  brand_name, size , COUNT(size) AS size_count FROM products
+          INNER JOIN size joined_table ON products.product_id = joined_table.product_id
+          GROUP BY size, brand_name
+          ORDER BY (size_count) DESC) as deriv
+          GROUP BY deriv.brand_name;`,
       );
       if (popularSizesPerBrand.length == 0) {
         return new NotFoundException();
