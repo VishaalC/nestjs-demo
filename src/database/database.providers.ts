@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
-import { loggerInstance } from 'logger/winston.logger';
+import logger, { metaLogFormatter } from 'logger/winston.logger';
 dotenv.config();
 
 export const userDataSource = new DataSource({
@@ -16,14 +16,16 @@ export const userDataSource = new DataSource({
 userDataSource
   .initialize()
   .then(() => {
-    loggerInstance.log({
-      level: 'info',
-      message: 'Database connected successfully',
-    });
+    logger.info('Database connected');
   })
   .catch((err) => {
-    loggerInstance.log({
-      level: 'error',
-      message: err,
+    logger.error('AI-MGNCC-PRM-100: Internal server error', err, {
+      meta: metaLogFormatter(
+        'AI-MNGCC-PRM-100',
+        `Internal server error ${err}`,
+        '500',
+        '/premium',
+        null,
+      ),
     });
   });

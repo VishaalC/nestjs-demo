@@ -1,45 +1,47 @@
-import { createLogger, transports, format } from 'winston';
+import { format, transports, createLogger } from 'winston';
 import 'winston-daily-rotate-file';
+const { combine, timestamp, printf } = format;
+import { join } from 'path';
 
-const logger = {
+const myFormat = printf(({ level, message, timestamp, ...meta }) => {
+  return `${timestamp} ${level}: ${message} ${JSON.stringify(meta.meta)}`;
+});
+
+const logger = createLogger({
   transports: [
     new transports.DailyRotateFile({
-      filename: `logs/%DATE%-error.log`,
+      format: combine(timestamp(), myFormat),
       level: 'error',
-      format: format.combine(format.timestamp(), format.json()),
-      datePattern: 'DD-MM-YYYY',
-      zippedArchive: false,
-      maxFiles: '30d',
+      filename: `logs/error-%DATE%.log`,
+      datePattern: 'YYYY-MM-DD',
+      zippedArchive: true,
+      maxSize: '20m',
+      maxFiles: '14d',
     }),
-
-    new transports.DailyRotateFile({
-      filename: `logs/%DATE%-info.log`,
-      level: 'info',
-      format: format.combine(format.timestamp(), format.json()),
-      datePattern: 'DD-MM-YYYY',
-      zippedArchive: false,
-      maxFiles: '10d',
-    }),
-
-    new transports.DailyRotateFile({
-      filename: `logs/%DATE%-combined.log`,
-      format: format.combine(format.timestamp(), format.json()),
-      datePattern: 'DD-MM-YYYY',
-      zippedArchive: false,
-      maxFiles: '1d',
-    }),
-
-    new transports.Console({
-      format: format.combine(
-        format.cli(),
-        format.splat(),
-        format.timestamp(),
-        format.printf((info) => {
-          return `${info.timestamp} ${info.level}: ${info.message}`;
-        }),
-      ),
-    }),
+    new transports.Console(),
   ],
-};
+});
 
-export const loggerInstance = createLogger(logger);
+export default logger;
+export function metaLogFormatter(
+  code,
+  error,
+  httpErrorCode,
+  httpEndpoint,
+  additionalInfo,
+) {
+  const meta = { CODE: code };
+  if (error) {
+    meta['error'] = error;
+  }
+  if (httpErrorCode) {
+    meta['HTTP_ERRORCODE'] = httpErrorCode;
+  }
+  if (httpEndpoint) {
+    meta['HTTP_ENDPOINT'] = httpEndpoint;
+  }
+  if (process.env.ENVIRONMENT) {
+    meta['ENVIRONMENT'] = process.env.ENVIRONMENT;
+  }
+  return { ...meta, ...additionalInfo };
+}

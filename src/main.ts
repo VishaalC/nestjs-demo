@@ -3,14 +3,9 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseFormatInterceptor } from './response-format/response-format.interceptor';
 import { WinstonModule } from 'nest-winston';
-import { loggerInstance } from 'logger/winston.logger';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: WinstonModule.createLogger({
-      instance: loggerInstance,
-    }),
-  });
+  const app = await NestFactory.create(AppModule);
   app.enableCors();
   app.useGlobalPipes(
     new ValidationPipe({

@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { parse } from 'papaparse';
 import { jsonrepair } from 'jsonrepair';
 import { userDataSource } from 'src/database/database.providers';
 import { productDTO } from './dto/product.dto';
+import logger, { metaLogFormatter } from 'logger/winston.logger';
+import { productDescriptionDTO } from './dto/productDescription.dto';
 
 @Injectable()
 export class ProductsService {
@@ -34,20 +36,39 @@ export class ProductsService {
         await this.uploadSize(product, productId, createdDate);
         await this.uploadImage(productId, product, createdDate);
         await this.uploadDescription(productId, product, createdDate);
-        return 'Data added successfuly';
       } catch (error) {
+        logger.error('UploadFile: Internal Server Error', {
+          meta: metaLogFormatter(
+            'ND-UF-100',
+            `${error}`,
+            `${error.status}`,
+            '/upload',
+            null,
+          ),
+        });
         await queryRunner.rollbackTransaction();
+        throw error;
       }
     }
+    return 'Data added successfuly';
   }
 
   async uploadBrand(brand: string) {
     try {
-      await userDataSource.manager.query(
+      let response = await userDataSource.manager.query(
         'INSERT IGNORE INTO brand (brand_name) VALUES (?)',
         [brand],
       );
     } catch (error) {
+      logger.error('UPLOAD BRAND: Internal server error', {
+        meta: metaLogFormatter(
+          'ND-UB-200',
+          `${error}`,
+          `${error.status}`,
+          '/upload',
+          null,
+        ),
+      });
       throw error;
     }
   }
@@ -80,6 +101,15 @@ export class ProductsService {
       );
       return uploadProductsResults.insertId;
     } catch (error) {
+      logger.error('UPLOAD PRODUCTS: Internal server error', {
+        meta: metaLogFormatter(
+          'ND-UP-300',
+          `${error}`,
+          `${error.status}`,
+          '/upload',
+          null,
+        ),
+      });
       throw error;
     }
   }
@@ -94,13 +124,22 @@ export class ProductsService {
         );
       });
     } catch (error) {
+      logger.error('UPLOAD SIZE: Internal server error', {
+        meta: metaLogFormatter(
+          'ND-US-300',
+          `${error}`,
+          `${error.status}`,
+          '/upload',
+          null,
+        ),
+      });
       throw error;
     }
   }
 
   async uploadImage(productId: string, data: productDTO, createdDate: string) {
-    const imagesArray = await JSON.parse(jsonrepair(data.images));
     try {
+      const imagesArray = await JSON.parse(jsonrepair(data.images));
       await imagesArray.forEach(async (image: string) => {
         await userDataSource.manager.query(
           'INSERT INTO images(product_id, image_url, status, created_date, modified_date, created_by) VALUES(?, ?, ?, ?, ?, ?)',
@@ -108,6 +147,15 @@ export class ProductsService {
         );
       });
     } catch (error) {
+      logger.error('UPLOAD Image: Internal server error', {
+        meta: metaLogFormatter(
+          'ND-UI-400',
+          `${error}`,
+          `${error.status}`,
+          '/upload',
+          null,
+        ),
+      });
       throw error;
     }
   }
@@ -117,38 +165,53 @@ export class ProductsService {
     data: productDTO,
     createdDate: string,
   ) {
-    const repairedDescriptionData = await JSON.parse(
-      jsonrepair(data?.description),
-    );
-    let finalDescription;
-    repairedDescriptionData.forEach((description: JSON) => {
+    let repairedDescriptionData;
+    try {
+      repairedDescriptionData = await JSON.parse(jsonrepair(data?.description));
+    } catch (error) {
+      logger.error('UPLOAD DESCRIPTION: Internal server error', {
+        meta: metaLogFormatter(
+          'ND-UD-501',
+          `${error}`,
+          `${error.status}`,
+          '/upload',
+          null,
+        ),
+      });
+      throw error;
+    }
+    let finalDescription: any;
+    repairedDescriptionData.forEach((description: Object) => {
       finalDescription = { ...finalDescription, ...description };
     });
+    finalDescription = Object.fromEntries(
+      Object.entries(finalDescription).map(([k, v]) => [k.toLowerCase(), v]),
+    );
 
     const descriptionTableKeys = {
       product_id: productId,
       color: finalDescription?.color || null,
       style: finalDescription?.style || null,
-      pattern_type: finalDescription?.['Pattern Type'] || null,
+      pattern_type: finalDescription?.['pattern type'] || null,
       type: finalDescription?.type || null,
       lined_for_added_warmth:
-        finalDescription?.['Lined For Added Warmth'] || null,
-      neckline: finalDescription?.['Neckline'] || null,
-      sleeve_length: finalDescription?.['Sleeve Length'] || null,
-      sleeve_type: finalDescription?.['Sleeve Type'] || null,
-      waist_line: finalDescription?.['Waist Line'] || null,
-      hem_shaped: finalDescription?.['Hem Shaped'] || null,
-      fit_type: finalDescription?.['Fit Type'] || null,
-      fabric: finalDescription?.['Fabric'] || null,
-      material: finalDescription?.['Material'] || null,
-      composition: finalDescription?.['Composition'] || null,
-      care_instructions: finalDescription?.['Care Instructions'] || null,
-      pockets: finalDescription?.['Pockets'] || null,
-      body: finalDescription?.['Body'] || null,
-      chest_pad: finalDescription?.['Chest Pad'] || null,
-      belt: finalDescription?.['Belt'] || null,
-      sheer: finalDescription?.['Sheer'] || null,
-      gender: finalDescription?.['Gender'] || null,
+        finalDescription?.['lined for added warmth'] || null,
+      neckline: finalDescription?.['neckline'] || null,
+      sleeve_length: finalDescription?.['sleeve length'] || null,
+      sleeve_type: finalDescription?.['sleeve type'] || null,
+      waist_line: finalDescription?.['waist line'] || null,
+      hem_shaped: finalDescription?.['hem shaped'] || null,
+      fit_type: finalDescription?.['fit type'] || null,
+      fabric: finalDescription?.['fabric'] || null,
+      material: finalDescription?.['material'] || null,
+      composition: finalDescription?.['composition'] || null,
+      care_instructions: finalDescription?.['care instructions'] || null,
+      pockets: finalDescription?.['pockets'] || null,
+      body: finalDescription?.['body'] || null,
+      chest_pad: finalDescription?.['chest pad'] || null,
+      belt: finalDescription?.['belt'] || null,
+      sheer: finalDescription?.['sheer'] || null,
+      gender: finalDescription?.['gender'] || null,
       status: true,
       created_date: createdDate,
       modified_date: createdDate,
@@ -165,6 +228,183 @@ export class ProductsService {
         descriptionTableValues,
       );
     } catch (error) {
+      logger.error('UPLOAD DESCRIPTION: Internal server error', {
+        meta: metaLogFormatter(
+          'ND-UD-500',
+          `${error}`,
+          `${error.status}`,
+          '/upload',
+          null,
+        ),
+      });
+      throw error;
+    }
+  }
+
+  async getRevenueByBrand() {
+    try {
+      const brandRevenue = await userDataSource.manager.query(
+        `SELECT brand.brand_name, SUM(CAST(substr(joined_table.price, 2) AS DECIMAL(10, 3))) AS total_price FROM brand
+         INNER JOIN products joined_table ON brand.brand_name = joined_table.brand_name
+         GROUP BY (brand.brand_name)
+         ORDER BY (total_price) DESC;`,
+      );
+      if (brandRevenue.length == 0) {
+        throw new NotFoundException();
+      } else {
+        return brandRevenue;
+      }
+    } catch (error) {
+      logger.error('UPLOAD BRAND: Internal server error', {
+        meta: metaLogFormatter(
+          'ND--GRB-100',
+          `${error}`,
+          `${error.status}`,
+          '/getRevenueByBrand',
+          null,
+        ),
+      });
+      throw error;
+    }
+  }
+
+  async popularProductsByBrand() {
+    try {
+      const popularProductsByBrand = await userDataSource.manager.query(
+        `SELECT brand.brand_name, COUNT(joined_table.brand_name) AS product_count FROM brand
+         INNER JOIN products joined_table ON brand.brand_name = joined_table.brand_name
+        GROUP BY (brand.brand_name)
+        ORDER BY (product_count) DESC;`,
+      );
+      if (popularProductsByBrand.length == 0) {
+        return new NotFoundException();
+      } else {
+        return popularProductsByBrand;
+      }
+    } catch (error) {
+      logger.error('popularProductsByBrand: Internal server error', {
+        meta: metaLogFormatter(
+          'ND--PPBB-100',
+          `${error}`,
+          `${error.status}`,
+          '/popularProductsByBrand',
+          null,
+        ),
+      });
+      throw error;
+    }
+  }
+
+  async maxPriceProduct() {
+    try {
+      const maxPriceProduct = await userDataSource.manager.query(
+        `SELECT brand.brand_name, MAX(CAST(substr(joined_table.price, 2) AS DECIMAL(10, 3))) AS max_price FROM brand
+          INNER JOIN products joined_table ON brand.brand_name = joined_table.brand_name
+          GROUP BY (brand.brand_name)
+          ORDER BY (max_price) DESC;`,
+      );
+      if (maxPriceProduct.length == 0) {
+        throw new NotFoundException();
+      } else {
+        return maxPriceProduct;
+      }
+    } catch (error) {
+      logger.error('maxPriceProduct: Internal Server Error', {
+        meta: metaLogFormatter(
+          'ND--MPP-100',
+          `${error}`,
+          `${error.status}`,
+          '/maxPriceProduct',
+          null,
+        ),
+      });
+      throw error;
+    }
+  }
+
+  async popularSizesPerBrand() {
+    try {
+      const popularSizesPerBrand = await userDataSource.manager.query(
+        `SELECT size, brand_name, COUNT(size) AS size_count FROM products
+         INNER JOIN size joined_table ON products.product_id = joined_table.product_id
+         GROUP BY size, brand_name;
+        `,
+      );
+      if (popularSizesPerBrand.length == 0) {
+        return new NotFoundException();
+      } else {
+        return popularSizesPerBrand;
+      }
+    } catch (error) {
+      logger.error('popularSizesPerBrand: Internal Server Error', {
+        meta: metaLogFormatter(
+          'ND-PPPB-100',
+          `${error}`,
+          `${error.status}`,
+          '/popularSizesPerBrand',
+          null,
+        ),
+      });
+      throw error;
+    }
+  }
+
+  async searchProductByColorAndGender(color: string, gender: string) {
+    try {
+      const searchResults = await userDataSource.manager.query(
+        `SELECT name, color, gender FROM products
+          INNER JOIN products_description joined_table ON products.product_id = joined_table.product_id
+          WHERE color =(?) AND gender =(?) ;`,
+        [color, gender],
+      );
+      if (searchResults.length == 0) {
+        throw new NotFoundException();
+      } else {
+        return searchResults;
+      }
+    } catch (error) {
+      logger.error('searchProductByColorAndGender: Internal Server Error', {
+        meta: metaLogFormatter(
+          'ND-PPPB-100',
+          `${error}`,
+          `${error.status}`,
+          '/popularSizesPerBrand',
+          null,
+        ),
+      });
+      throw error;
+    }
+  }
+
+  async searchProductBetweenRange(
+    fitType: string,
+    material: string,
+    start: string,
+    end: string,
+  ) {
+    try {
+      const searchResults = await userDataSource.manager.query(
+        `SELECT fit_type, material, CAST(substr(joined_table.price, 2) AS DECIMAL(10, 3)) AS result
+         FROM products_description
+         INNER JOIN products joined_table ON joined_table.product_id = products_description.product_id
+         WHERE (fit_type=(?) AND material=(?)) HAVING result BETWEEN (?) AND (?);`,
+        [fitType, material, start, end],
+      );
+      if (searchResults.length == 0) {
+        throw new NotFoundException();
+      } else {
+        return searchResults;
+      }
+    } catch (error) {
+      logger.error('searchProductBetweenRange: Internal Server Error', {
+        meta: metaLogFormatter(
+          'ND-PPPB-100',
+          `${error}`,
+          `${error.status}`,
+          '/popularSizesPerBrand',
+          null,
+        ),
+      });
       throw error;
     }
   }
